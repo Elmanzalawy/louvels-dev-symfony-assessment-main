@@ -20,8 +20,8 @@ use Symfony\Component\Validator\Constraints as Assert;
 #[ApiResource(
     routePrefix: '/v1',
     operations: [
+        new GetCollection(uriTemplate: '/countries/list'),
         new Get(uriTemplate: '/countries/{cca3}'),
-        new GetCollection(uriTemplate: '/countries'),
         new Post(uriTemplate: '/countries'),
         new Patch(uriTemplate: '/countries/{cca3}'),
         new Delete(uriTemplate: '/countries/{cca3}'),
@@ -36,8 +36,9 @@ class Country
     #[ApiProperty(identifier: false)]
     private ?string $uuid = null;
 
-    #[ORM\Column(length: 3, unique: true)]
+    #[ORM\Column(type: 'string', length: 3, unique: true)]
     #[ApiProperty(identifier: true)]
+    #[Assert\NotBlank]
     private ?string $cca3 = null;
 
     #[ORM\Column(length: 255)]
@@ -54,9 +55,11 @@ class Country
     private array $demonym = [];
 
     #[ORM\Column]
+    #[Assert\NotBlank]
     private ?int $population = null;
 
     #[ORM\Column]
+    #[Assert\NotBlank]
     private ?bool $independant = null;
 
     #[ORM\Column(length: 255)]
