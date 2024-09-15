@@ -46,6 +46,16 @@ class CountrySyncService
         if (0 == count($countries)) {
             $this->seedCountries($restCountries);
         } else {
+            // check for deleted countries
+            if (count($countries) < count($restCountries)) {
+                foreach ($restCountriesByCode as $cca3 => $restCountry) {
+                    $countryExists = $this->entityManager->getRepository(Country::class)->findOneBy(['cca3' => $cca3]);
+
+                    if (!$countryExists) {
+                        $this->updateOrCreateCountry($restCountry);
+                    }
+                }
+            }
             foreach ($countries as $country) {
                 $cca3 = $country->getCca3();
                 if (!isset($restCountriesByCode[$cca3])) {
