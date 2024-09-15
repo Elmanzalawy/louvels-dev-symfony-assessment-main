@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Command;
@@ -17,6 +18,6 @@ class CountrySyncCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        return COMMAND::SUCCESS;
+        return Command::SUCCESS;
     }
 }
