@@ -32,13 +32,11 @@ class CountrySyncService
         // get countries count in the database
         $countriesCount = $this->entityManager->getRepository(Country::class)->count();
 
-        if (0 === $countriesCount) {
-            // seed countries if no countries are present in db
-            $this->seedCountries($restCountriesByCode);
-        } else {
-            // otherwise update & restore countries
-            $this->updateCountries($restCountriesByCode);
+        if ($countriesCount > 0) {
+            $this->entityManager->createQueryBuilder()->delete(Country::class, 'c')->getQuery()->execute();
         }
+
+        $this->seedCountries($restCountriesByCode);
 
         // flush changes to the database
         $this->entityManager->flush();
@@ -68,53 +66,22 @@ class CountrySyncService
     }
 
     /**
-     * Seed countries. Run during initial seeding.
+     * Insert countries into database.
      */
     private function seedCountries(array $countries): void
     {
         foreach ($countries as $countryData) {
             // update existing country or create a new one
-            $this->updateOrCreateCountry($countryData);
-        }
-    }
-
-    /**
-     * Update existing countries or restore deleted ones.
-     */
-    private function updateCountries(array $restCountriesByCode): void
-    {
-        $countriesInDB = $this->entityManager->getRepository(Country::class)->findAll();
-
-        // check for deleted countries
-        if (count($countriesInDB) < count($restCountriesByCode)) {
-            foreach ($restCountriesByCode as $cca3 => $restCountry) {
-                $countryExists = $this->entityManager->getRepository(Country::class)->findOneBy(['cca3' => $cca3]);
-
-                if (!$countryExists) {
-                    $this->updateOrCreateCountry($restCountry);
-                }
-            }
-        }
-
-        foreach ($countriesInDB as $country) {
-            $cca3 = $country->getCca3();
-            if (!isset($restCountriesByCode[$cca3])) {
-                // if country does not exist in restcountries.com, remove it
-                $this->entityManager->remove($country);
-            } else {
-                // otherwise sync country with restcountries.com
-                $countryData = $restCountriesByCode[$cca3];
-                $this->updateOrCreateCountry($countryData);
-            }
+            $this->createCountry($countryData);
         }
     }
 
     /**
      * Create country or update it if it exists.
      */
-    private function updateOrCreateCountry(array $countryData): void
+    private function createCountry(array $countryData): void
     {
-        $country = $this->countryRepository->findOneBy(['cca3' => $countryData['cca3']]) ?? new Country();
+        $country = new Country();
         $country->setName($countryData['name']['common'] ?? null);
         $country->setCca3($countryData['cca3']);
         $country->setRegion($countryData['region'] ?? null);
