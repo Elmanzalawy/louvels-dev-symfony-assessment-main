@@ -3,21 +3,18 @@
 namespace App\Service;
 
 use App\Entity\Country;
-use App\Repository\CountryRepository;
+use App\Service\Contract\CountriesHttpInterface;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 class CountrySyncService
 {
-    private $httpClient;
     private $entityManager;
-    private $countryRepository;
+    private $countriesHttpService;
 
-    public function __construct(HttpClientInterface $httpClient, EntityManagerInterface $entityManager, CountryRepository $countryRepository)
+    public function __construct(EntityManagerInterface $entityManager, CountriesHttpInterface $countriesHttpService)
     {
-        $this->httpClient = $httpClient;
         $this->entityManager = $entityManager;
-        $this->countryRepository = $countryRepository;
+        $this->countriesHttpService = $countriesHttpService;
     }
 
     /**
@@ -27,7 +24,7 @@ class CountrySyncService
     public function syncCountries(): void
     {
         // get countries from 3rd party
-        $restCountriesByCode = $this->getRestCountries();
+        $restCountriesByCode = $this->countriesHttpService->getRestCountries();
 
         // get countries count in the database
         $countriesCount = $this->entityManager->getRepository(Country::class)->count();
@@ -40,29 +37,6 @@ class CountrySyncService
 
         // flush changes to the database
         $this->entityManager->flush();
-    }
-
-    /**
-     * Returns array of countries returned by restcountries.com.
-     *
-     * @throws \Exception
-     */
-    public function getRestCountries(): array
-    {
-        // get countries from restcountries.com
-        $response = $this->httpClient->request('GET', 'https://restcountries.com/v3.1/all');
-
-        if (200 !== $response->getStatusCode()) {
-            throw new \Exception('An error has occured while fetching country data');
-        }
-        $restCountries = $response->toArray();
-
-        $restCountriesByCode = [];
-        foreach ($restCountries as $restCountry) {
-            $restCountriesByCode[$restCountry['cca3']] = $restCountry;
-        }
-
-        return $restCountriesByCode;
     }
 
     /**
